@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UltraPanel</title>
+    <style>
+        @font-face {
+            font-family: "Golos Text";
+            src: url("/GolosText/GolosText-VariableFont_wght.ttf");
+        }
+        * {
+            font-family: "Golos Text";
+        }
+        body {
+            background-color: #121212;
+            color: white;
+        }
+        .server-list-item {
+            background-color: #242424;
+            padding: 12px;
+        }
+        .server-list-item[server-status="running"] {
+            background-color: #242824;
+        }
+    </style>
+</head>
+<body>
+    <h1>Active Container IDs</h1>
+    <p><%= active_containers %></p>
+    <div id="server-list">
+        <% for (var i = 0; i < active_containers.length; i++) { %>
+            <div class="server-list-item" server-id="<%= active_containers[i].Id %>" server-status="<%= active_containers[i].State %>">
+                <div class="server-name"><%= active_containers[i].Id.substring(0, 12) %></div>
+                <div class="server-status-<%= active_containers[i].State %>"></div>
+                
+            </div>
+        <% } %>
+    </div>
+</body>
+</html>

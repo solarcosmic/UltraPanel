@@ -19,6 +19,7 @@
   "homepage": "https://github.com/solarcosmic/UltraPanel#readme",
   "dependencies": {
     "dockerode": "^4.0.9",
+    "ejs": "^4.0.1",
     "express": "^5.2.1"
   }
 }
