@@ -27,15 +27,46 @@
 </head>
 <body>
     <h1>Active Container IDs</h1>
-    <p><%= active_containers %></p>
     <div id="server-list">
         <% for (var i = 0; i < active_containers.length; i++) { %>
             <div class="server-list-item" server-id="<%= active_containers[i].Id %>" server-status="<%= active_containers[i].State %>">
                 <div class="server-name"><%= active_containers[i].Id.substring(0, 12) %></div>
                 <div class="server-status-<%= active_containers[i].State %>"></div>
-                
+                <button class="signal-status" onclick="updateStatus('start', '<%= active_containers[i].Id %>')">Start</button>
+                <button class="signal-status" onclick="updateStatus('stop', '<%= active_containers[i].Id %>')">Stop</button>
             </div>
         <% } %>
     </div>
+    <script>
+        function updateStatus(statusType, serverId) {
+            fetch("/api/send-signal", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({command: statusType, serverId: serverId}),
+            })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                }
+            })
+            .then(data => console.log(data));
+        }
+
+        function renderServerList() {
+            fetch("/api/servers", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(`Server list stuff: ${data}`);
+            })
+        };
+        renderServerList();
+    </script>
 </body>
 </html>
