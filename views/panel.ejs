@@ -17,8 +17,15 @@
             color: white;
         }
         .server-list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             background-color: #242424;
-            padding: 12px;
+            padding: 18px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
         }
         .server-list-item[server-status="running"] {
             background-color: #242824;
@@ -28,16 +35,22 @@
 <body>
     <h1>Active Container IDs</h1>
     <div id="server-list">
-        <% for (var i = 0; i < active_containers.length; i++) { %>
-            <div class="server-list-item" server-id="<%= active_containers[i].Id %>" server-status="<%= active_containers[i].State %>">
-                <div class="server-name"><%= active_containers[i].Id.substring(0, 12) %></div>
-                <div class="server-status-<%= active_containers[i].State %>"></div>
-                <button class="signal-status" onclick="updateStatus('start', '<%= active_containers[i].Id %>')">Start</button>
-                <button class="signal-status" onclick="updateStatus('stop', '<%= active_containers[i].Id %>')">Stop</button>
-            </div>
-        <% } %>
+
     </div>
     <script>
+        /* From https://github.com/Interlabs-Official/ClassroomPlus/blob/main/settings/script.js */
+        function createAndAssignId(elementType, id) {
+            const element = document.createElement(elementType || "div");
+            element.setAttribute("id", id || "unknown-id");
+            return element;
+        };
+
+        function createAndAssignClass(elementType, className) {
+            const element = document.createElement(elementType || "div");
+            element.classList.add(className || "unknown-class");
+            return element;
+        };
+
         function updateStatus(statusType, serverId) {
             fetch("/api/send-signal", {
                 method: "POST",
@@ -47,8 +60,9 @@
                 body: JSON.stringify({command: statusType, serverId: serverId}),
             })
             .then(response => {
+                console.log("Response received");
                 if (response.ok) {
-                    location.reload();
+                    renderServerList();
                 }
             })
             .then(data => console.log(data));
@@ -64,6 +78,35 @@
             .then(response => response.json())
             .then(data => {
                 console.log(`Server list stuff: ${data}`);
+                document.getElementById("server-list").innerHTML = "";
+                for (var i = 0; i < data.length; i++) {
+                    const listItem = createAndAssignClass("div", "server-list-item");
+                    const serverName = createAndAssignClass("div", "server-name");
+                    //const serverStatus = createAndAssignClass("div", "server-status");
+                    const signalStatus = createAndAssignClass("button", "signal-status");
+                    listItem.setAttribute("server-id", data[i].shortId);
+                    listItem.setAttribute("server-status", data[i].state);
+                    serverName.textContent = data[i].name || "Untitled server";
+                    const restartBtn = createAndAssignClass("button", "restart-status");
+                    restartBtn.textContent = "Restart";
+                    const state = data[i].state == "exited" ? "Start" : "Stop";
+                    signalStatus.textContent = state;
+                    const fullId = data[i].id;
+                    signalStatus.addEventListener("click", () => {
+                        signalStatus.textContent = "...";
+                        updateStatus(state, fullId);
+                    });
+                    restartBtn.addEventListener("click", () => {
+                        restartBtn.textContent = "...";
+                        updateStatus("restart", fullId);
+                    });
+                    listItem.appendChild(serverName);
+                    const buttonGroup = createAndAssignClass("div", "button-group");
+                    buttonGroup.appendChild(signalStatus);
+                    buttonGroup.appendChild(restartBtn);
+                    listItem.appendChild(buttonGroup);
+                    document.getElementById("server-list").appendChild(listItem);
+                }
             })
         };
         renderServerList();

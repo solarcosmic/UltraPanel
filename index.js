@@ -26,8 +26,8 @@ app.get('/', async (req, res) => {
     });
 });
 
-app.post("/api/send-signal", (req, res) => {
-    const signal = req.body?.command;
+app.post("/api/send-signal", async (req, res) => {
+    const signal = req.body?.command.toLowerCase();
     const serverId = req.body?.serverId;
     console.log(`Server with ID of ${serverId} has been sent signal '${signal}'.`);
     try {
@@ -36,15 +36,24 @@ app.post("/api/send-signal", (req, res) => {
             if (signal == "stop") {
                 container.stop(function () { // (err, data)
                     console.log(`Server with ID of ${serverId} has been successfully stopped.`);
+                    res.json({success: true});
                 });
             } else if (signal == "start") {
                 container.start(function () {
                     console.log(`Server with ID of ${serverId} has been successfully started.`);
+                    res.json({success: true});
+                });
+            } else if (signal == "restart") {
+                container.restart(function () {
+                    console.log(`Server with ID of ${serverId} has been successfully restarted.`);
+                    res.json({success: true});
                 });
             }
         }
+        //res.json({success: true}); I'm not sure if this supports async or not
     } catch (err) {
         console.error(err);
+        res.status(500).json({success: false, error: err.message});
     }
 });
 
