@@ -7,23 +7,53 @@ const app = express();
 app.set("view engine", "ejs");
 const port = 3000;
 
+const http = require("http").createServer(app);
+const io = require("socket.io")(http);
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-app.listen(port, () => {
+/*app.listen(port, () => {
     console.log(`Running on 127.0.0.1:${port}`);
     listContainers();
+});*/
+
+http.listen(port, () => {
+    console.log("Running HTTP + websocket on port " + port);
 });
+
+io.on("connection", (socket) => {
+    console.log("Client connected");
+})
 
 app.get('/', async (req, res) => {
     // From https://stackoverflow.com/a/57710329
     //res.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
     //res.header('Expires', '-1');
     //res.header('Pragma', 'no-cache');
-    const containers = await listContainers();
+    //const containers = await listContainers();
     //console.log("Container List: " + JSON.stringify(containers, null, 2));
-    res.render('panel', {
+    /*res.render('panel', {
         active_containers: containers
+    });*/
+    var container = await api_getServerById("22dc2ad12ceca9b039f296da6bd86924489e2db8c930ef1bc566ea5d11f5d753");
+    var logs = await api_getContainerLogs("22dc2ad12ceca9b039f296da6bd86924489e2db8c930ef1bc566ea5d11f5d753");
+    res.render('console', {
+        server: container,
+        logs: logs
     });
+    console.log(logs);
+});
+
+app.get("/server/:shortId", async (req, res) => {
+    const shortId = req.params.shortId;
+    if (!shortId) res.json({success: false, error: "You must provide a valid ID"});
+    var container = await api_getServerById(shortId);
+    var logs = await api_getContainerLogs(shortId);
+    res.render('console', {
+        server: container,
+        logs: logs
+    });
+    console.log(logs);
 });
 
 app.post("/api/send-signal", async (req, res) => {
@@ -58,9 +88,73 @@ app.post("/api/send-signal", async (req, res) => {
 });
 
 app.get("/api/servers", async (req, res) => {
-    const containers = await listContainers();
-    res.json(containers);
+    res.json(await api_getServers());
 });
+
+async function api_getServers() {
+    return await listContainers() || {};
+}
+
+async function api_getServerById(id) {
+    // TODO: instead of looping through the whole server list, pick it out individually and parse that way
+    const serverList = await api_getServers();
+    for (const obj of serverList) {
+        if (obj.id == id) {
+            return obj;
+        }
+    }
+    return null;
+}
+
+// Credit: GPT 4.1 (for the thing)
+async function api_getContainerLogs(id) {
+    const container = docker.getContainer(id);
+    const data = await container.logs({
+        stdout: true,
+        stderr: true,
+        tail: 'all',
+        timestamps: true
+    });
+    if (Buffer.isBuffer(data)) {
+        return data.toString('utf-8');
+    } else if (typeof data === 'string') {
+        return data;
+    } else if (data && typeof data.pipe === 'function') {
+        return await new Promise((resolve, reject) => {
+            let logs = '';
+            data.on('data', chunk => {
+                logs += chunk.toString('utf-8');
+            });
+            data.on('end', () => resolve(logs));
+            data.on('error', reject);
+        });
+    } else {
+        return '';
+    }
+};
+
+async function api_sendCommand(serverId, command) {
+    const server = docker.getContainer(serverId);
+    const exec = await container.exec({
+        Cmd: ["/bin/sh", "-c", command],
+        AttachStdout: true,
+        AttachStderr: true
+    });
+    exec.start((err, stream) => {
+        if (err) {
+            return {success: false, error: err.message};
+        };
+        let output = "";
+
+        // stuff here
+    });
+    server.exec({Cmd: ['ls'], AttachStdout: true, AttachStderr: true}, (err, exec) => {
+        if (err) return;
+        exec.start((err, stream) => {
+            // stuff here
+        });
+    })
+};
 
 async function listContainers() {
     try {
@@ -82,7 +176,32 @@ async function listContainers() {
         });
         return containerIds;
     } catch (error) {
-        console.log("Error occurred: " + containers);
+        console.log("Error occurred: " + error);
         return [];
     }
-}
+};
+
+io.on("connection", (socket) => {
+    socket.on("execCommand", async ({containerId, command}) => {
+        try {
+            const server = docker.getContainer(serverId);
+            const exec = await server.exec({
+                Cmd: ["/bin/sh", "-c", command],
+                AttachStdout: true,
+                AttachStderr: true
+            });
+            exec.start((err, stream) => {
+                if (err) {
+                    socket.emit("commandResult", "Error: " + err.message);
+                    return {success: false, error: err.message};
+                };
+                let output = "";
+                stream.on("data", chunk => output += chunk.toString("utf-8"));
+                stream.on("end", () => socket.emit("commandResult", output));
+                // stuff here
+            });
+        } catch (e) {
+            socket.emit("commandResult", "Error: " + e.message);
+        }
+    })
+})

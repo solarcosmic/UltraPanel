@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        /* From https://stackoverflow.com/a/57335917 */
+        #container {
+            width: 100%;
+            display: grid;
+            grid-template-areas: "sidebar main";
+            grid-template-columns: 200px auto;
+        }
+        #sidebar {
+            grid-area: sidebar;
+            height: 100vw;
+            background-color: #161616;
+            padding: 20px;
+        }
+        #console {
+            grid-area: main;
+            height: 100vw;
+            background-color: #121212;
+        }
+        #server-name {
+            font-size: 18px;
+            font-weight: 600;
+            text-overflow: ellipsis;
+        }
+        #server-ip {
+            color: grey;
+            text-overflow: ellipsis;
+        }
+        #console-block {
+            width: 500px;
+            height: 500px;
+            background-color: #121212;
+            color: white;
+        }
+        #console-hint {
+            color: grey;
+            font-style: italic;
+            padding-top: 10px;
+        }
+        #console-command {
+            width: 500px;
+            background-color: #121212;
+            color: white;
+            font-size: 20px;
+        }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div id="container">
+        <div id="sidebar">
+            <div id="server-name"></div>
+            <div id="server-ip">127.0.0.1:25565</div>
+        </div>
+        <div id="console">
+            <textarea id="console-block" readonly></textarea>
+            <input type="text" id="console-command" placeholder="Enter a command..."></input>
+            <div id="console-hint">Only showing the last 100 entries.</div>
+        </div>
+    </div>
+    
+</body>
+<script>
+    const socket = io();
+    const maxLogCount = 100;
+    const server = <%- JSON.stringify(server) %>;
+    const logs = <%- JSON.stringify(logs) %>;
+    console.log(server);
+    document.getElementById("console-block").textContent = logs.split("\n").slice(-100).join("\n");
+    document.getElementById("server-name").textContent = server.name;
+    const console_logbox = document.getElementById("console-block");
+    console_logbox.scrollTop = console_logbox.scrollHeight;
+    const console_command = document.getElementById("console-command");
+    console_command.addEventListener("keydown", (e) => {
+        if (e.key == "Enter") {
+            const cmd = console_command.value.trim();
+            if (!cmd) return;
+            socket.emit("execCommand", {containerId: server.id, command: cmd});
+            console_command.value = "";
+        }
+    });
+    socket.on("commandResult", (result) => {
+        var lines = lines.concat(result.split("\n"));
+        if (lines.length > 100) lines.slice(-maxLogCount);
+        
+    })
+
+    
+</script>
+</html>

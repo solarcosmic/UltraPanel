@@ -1,0 +1,33 @@
+        @font-face {
+            font-family: "Golos Text";
+            src: url("/GolosText/GolosText-VariableFont_wght.ttf");
+        }
+        * {
+            font-family: "Golos Text";
+        }
+        body {
+            background-color: #121212;
+            color: white;
+        }
+        .server-list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #242424;
+            padding: 18px;
+            cursor: pointer;
+        }
+        .server-list-item:hover {
+            background-color: #282828;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        .server-list-item[server-status="running"] {
+            background-color: #242824;
+        }
+        .server-status-display {
+            color: grey;
+            font-style: italic;
+        }
