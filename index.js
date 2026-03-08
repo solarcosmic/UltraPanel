@@ -35,13 +35,14 @@ app.get('/', async (req, res) => {
     /*res.render('panel', {
         active_containers: containers
     });*/
-    var container = await api_getServerById("22dc2ad12ceca9b039f296da6bd86924489e2db8c930ef1bc566ea5d11f5d753");
+    /*var container = await api_getServerById("22dc2ad12ceca9b039f296da6bd86924489e2db8c930ef1bc566ea5d11f5d753");
     var logs = await api_getContainerLogs("22dc2ad12ceca9b039f296da6bd86924489e2db8c930ef1bc566ea5d11f5d753");
-    res.render('console', {
+    res.render('panel', {
         server: container,
         logs: logs
     });
-    console.log(logs);
+    console.log(logs);*/
+    res.render("panel");
 });
 
 app.get("/server/:shortId", async (req, res) => {
@@ -182,9 +183,37 @@ async function listContainers() {
 };
 
 io.on("connection", (socket) => {
+    socket.on("subscribeLogs", async (containerId) => {
+        try {
+            const server = docker.getContainer(containerId);
+            const logStream = await server.logs({
+                follow: true,
+                stdout: true,
+                stderr: true,
+                tail: 100,
+                timestamps: true
+            });
+
+            // Credit: GPT-4.1 (for the demux process)
+            const { Writable } = require('stream');
+            const outStream = new Writable({
+                write(chunk, enc, callback) {
+                    socket.emit("logs", chunk.toString("utf-8"));
+                    callback();
+                }
+            });
+            server.modem.demuxStream(logStream, outStream, outStream);
+
+            socket.on("disconnect", () => {
+                logStream.destroy();
+            });
+        } catch (e) {
+            socket.emit("logs", "Error with log stream: " + e.message);
+        }
+    })
     socket.on("execCommand", async ({containerId, command}) => {
         try {
-            const server = docker.getContainer(serverId);
+            const server = docker.getContainer(containerId);
             const exec = await server.exec({
                 Cmd: ["/bin/sh", "-c", command],
                 AttachStdout: true,
@@ -192,7 +221,7 @@ io.on("connection", (socket) => {
             });
             exec.start((err, stream) => {
                 if (err) {
-                    socket.emit("commandResult", "Error: " + err.message);
+                    socket.emit("commandResult", "[UPD > Error]: " + err.message);
                     return {success: false, error: err.message};
                 };
                 let output = "";
@@ -201,7 +230,7 @@ io.on("connection", (socket) => {
                 // stuff here
             });
         } catch (e) {
-            socket.emit("commandResult", "Error: " + e.message);
+            socket.emit("commandResult", "[UPD > Error]: " + e.message);
         }
     })
 })

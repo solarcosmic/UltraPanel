@@ -78,6 +78,9 @@
     const console_logbox = document.getElementById("console-block");
     console_logbox.scrollTop = console_logbox.scrollHeight;
     const console_command = document.getElementById("console-command");
+    
+    socket.emit("subscribeLogs", server.id);
+
     console_command.addEventListener("keydown", (e) => {
         if (e.key == "Enter") {
             const cmd = console_command.value.trim();
@@ -86,12 +89,18 @@
             console_command.value = "";
         }
     });
-    socket.on("commandResult", (result) => {
-        var lines = lines.concat(result.split("\n"));
+    var lines = [];
+    socket.on("logs", (data) => {
+        lines = lines.concat(data.split("\n"));
         if (lines.length > 100) lines.slice(-maxLogCount);
-        
+        console_logbox.value = lines.join("\n");
+        console_logbox.scrollTop = console_logbox.scrollHeight;
     })
-
-    
+    socket.on("commandResult", (result) => {
+        lines = lines.concat(result.split("\n"));
+        if (lines.length > 100) lines.slice(-maxLogCount);
+        console_logbox.value = lines.join("\n");
+        console_logbox.scrollTop = console_logbox.scrollHeight;
+    })
 </script>
 </html>
