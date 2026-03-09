@@ -50,14 +50,58 @@
             color: white;
             font-size: 20px;
         }
+        #navigation-back {
+            background-color: #242424;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            width: 100%;
+            height: 32px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        #navigation-back:hover {
+            background-color: #282828;
+        }
+        #server-status-main {
+            background-color: #242424;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            width: 100%;
+            height: 32px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        #server-status-main[status="start"] {
+            background-color: #00210a;
+        }
+        #server-status-main[status="stop"] {
+            background-color: #210000;
+        }
+        #server-status-restart {
+            background-color: #454000;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            width: 100%;
+            height: 32px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        };
     </style>
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <div id="container">
         <div id="sidebar">
+            <button id="navigation-back"><- Back</button>
             <div id="server-name"></div>
             <div id="server-ip">127.0.0.1:25565</div>
+            <button id="server-status-main" status="start">Start</button>
+            <button id="server-status-restart">Restart</button>
         </div>
         <div id="console">
             <textarea id="console-block" readonly></textarea>
@@ -78,7 +122,8 @@
     const console_logbox = document.getElementById("console-block");
     console_logbox.scrollTop = console_logbox.scrollHeight;
     const console_command = document.getElementById("console-command");
-    
+    const navigation_back = document.getElementById("navigation-back");
+    const server_status_button = document.getElementById("server-status-main");
     socket.emit("subscribeLogs", server.id);
 
     console_command.addEventListener("keydown", (e) => {
@@ -101,6 +146,75 @@
         if (lines.length > 100) lines.slice(-maxLogCount);
         console_logbox.value = lines.join("\n");
         console_logbox.scrollTop = console_logbox.scrollHeight;
-    })
+    });
+    socket.on("containerStatus", (data) => {
+        // TODO: implement so only one person (auth?) or the valid people can get this because this occurs for every server
+        console.log("Event FIRED");
+        console.log(data);
+        if (data.id == server.id) {
+            console.log(`ALERT: DATA CHANGE: ${data.action}`);
+            if (data.action == "stop" || data.action == "die") {
+                setActionStatus("start");
+            } else if (data.action == "start") {
+                setActionStatus("stop");
+            }
+        }
+    });
+
+    function setActionStatus(status = "start") {
+        if (status == "start") {
+            server_status_button.textContent = "Start";
+        } else if (status == "stop") {
+            server_status_button.textContent = "Stop";
+        } else {
+            return;
+        }
+        server_status_button.setAttribute("status", status);
+    };
+
+    function getActionStatus() {
+        return server_status_button.getAttribute("status") || "unknown";
+    };
+
+    function getServerStatus(id = server.id) {
+        return fetch("/api/server-status/" + id, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        })
+        .then(response => response.json())
+        //.then(data => {
+        //    return data;
+        //});
+    };
+    navigation_back.addEventListener("click", () => {
+        window.location.href = "/";
+    });
+    document.addEventListener("DOMContentLoaded", () => {
+        getServerStatus().then(data => {
+            if (data.isRunning) {
+                setActionStatus("stop");
+            } else {
+                setActionStatus("start");
+            }
+        });
+    });
+    function updateStatus(statusType, serverId) {
+        fetch("/api/send-signal", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({command: statusType, serverId: serverId}),
+        })
+        .then(response => {
+            console.log("Response received");
+            //if (response.ok) {
+            //    renderServerList();
+            //}
+        })
+        .then(data => console.log(data));
+    };
 </script>
 </html>

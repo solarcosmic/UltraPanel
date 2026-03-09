@@ -54,7 +54,7 @@ app.get("/server/:shortId", async (req, res) => {
         server: container,
         logs: logs
     });
-    console.log(logs);
+    //console.log(logs);
 });
 
 app.post("/api/send-signal", async (req, res) => {
@@ -82,6 +82,22 @@ app.post("/api/send-signal", async (req, res) => {
             }
         }
         //res.json({success: true}); I'm not sure if this supports async or not
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({success: false, error: err.message});
+    }
+});
+
+app.get("/api/server-status/:id", async (req, res) => {
+    const serverId = req.params.id;
+    try {
+        var container = docker.getContainer(serverId);
+        if (!container) throw Error("Server with ID not found. Is the correct ID used?");
+        container.inspect((err, data) => {
+            if (err) throw Error(err);
+            res.json({success: true, status: data.State.Status, isRunning: data.State.Running});
+        });
+        //
     } catch (err) {
         console.error(err);
         res.status(500).json({success: false, error: err.message});
@@ -162,7 +178,7 @@ async function listContainers() {
         const containers = await docker.listContainers({all: true});
         const containerIds = containers.map(ctInfo => {
             //return ctInfo.Names[0].substring(1) || ctInfo.Id;
-            console.log(ctInfo);
+            //console.log(ctInfo);
             return {
                 id: ctInfo.Id,
                 shortId: ctInfo.Id.substring(0, 12),
@@ -233,4 +249,23 @@ io.on("connection", (socket) => {
             socket.emit("commandResult", "[UPD > Error]: " + e.message);
         }
     })
-})
+});
+docker.getEvents({}, (err, stream) => {
+    stream.on("data", (chunk) => {
+        try {
+            const event = JSON.parse(chunk.toString("utf-8"));
+            if (event.Type == "container") {
+                console.log("event fired");
+                console.log(event);
+                console.log(event.id);
+                io.emit("containerStatus", {
+                    id: event.Actor.ID || "testing",
+                    action: event.Action,
+                    status: event.status
+                });
+            }
+        } catch (err) {
+            // ignore?
+        }
+    })
+});

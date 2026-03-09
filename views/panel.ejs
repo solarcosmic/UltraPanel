@@ -74,7 +74,7 @@
                 }
             })
             .then(data => console.log(data));
-        }
+        };
 
         function renderServerList() {
             fetch("/api/servers", {
@@ -102,18 +102,22 @@
                     const serverStatusDisplay = createAndAssignClass("span", "server-status-display");
                     serverStatusDisplay.textContent = data[i].status;
                     const fullId = data[i].id;
-                    signalStatus.addEventListener("click", () => {
+                    const shortId = data[i].shortId;
+                    signalStatus.addEventListener("click", (e) => {
+                        e.stopPropagation();
                         signalStatus.textContent = "...";
                         updateStatus(state, fullId);
                     });
-                    restartBtn.addEventListener("click", () => {
+                    restartBtn.addEventListener("click", (e) => {
+                        e.stopPropagation();
                         restartBtn.textContent = "...";
                         updateStatus("restart", fullId);
                     });
                     listItem.addEventListener("click", (e) => {
                         // TODO: make it so that it doesn't activate buttons when clicking on the main thing
                         //e.preventDefault();
-                        console.log("Click!");
+                        if (e.target != listItem) return;
+                        window.location.href = "/server/" + fullId;
                     })
                     listItem.appendChild(serverName);
                     listItem.appendChild(serverStatusDisplay);
