@@ -124,6 +124,7 @@
     const console_command = document.getElementById("console-command");
     const navigation_back = document.getElementById("navigation-back");
     const server_status_button = document.getElementById("server-status-main");
+    const server_restart_button = document.getElementById("server-status-restart");
     socket.emit("subscribeLogs", server.id);
 
     console_command.addEventListener("keydown", (e) => {
@@ -143,7 +144,7 @@
     })
     socket.on("commandResult", (result) => {
         lines = lines.concat(result.split("\n"));
-        if (lines.length > 100) lines.slice(-maxLogCount);
+        if (lines.length > maxLogCount) lines.slice(-maxLogCount);
         console_logbox.value = lines.join("\n");
         console_logbox.scrollTop = console_logbox.scrollHeight;
     });
@@ -155,11 +156,23 @@
             console.log(`ALERT: DATA CHANGE: ${data.action}`);
             if (data.action == "stop" || data.action == "die") {
                 setActionStatus("start");
+                println("[UPD] > Server stopped, halted, or terminated");
             } else if (data.action == "start") {
                 setActionStatus("stop");
+                lines.length = 0; // resets array
+                console_logbox.value = "";
+                println("[UPD] > Server started");
+                socket.emit("subscribeLogs", server.id);
             }
         }
     });
+
+    function println(line) {
+        lines.push(line);
+        if (lines.length > maxLogCount) lines.slice(-maxLogCount);
+        console_logbox.value = lines.join("\n");
+        console_logbox.scrollTop = console_logbox.scrollHeight;
+    }
 
     function setActionStatus(status = "start") {
         if (status == "start") {
@@ -191,6 +204,9 @@
     navigation_back.addEventListener("click", () => {
         window.location.href = "/";
     });
+    server_restart_button.addEventListener("click", () => {
+        updateStatus("restart", server.id); // needs security measure
+    })
     document.addEventListener("DOMContentLoaded", () => {
         getServerStatus().then(data => {
             if (data.isRunning) {
