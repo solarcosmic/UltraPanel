@@ -1,7 +1,18 @@
 const express = require("express");
 const path = require("path");
 const Docker = require("dockerode");
+const kleur = require("kleur");
 var docker = new Docker();
+
+console.log(kleur.bold(`
+▗▖ ▗▖█    ■   ▄▄▄ ▗▞▀▜▌▗▄▄▖ ▗▞▀▜▌▄▄▄▄  ▗▞▀▚▖█ 
+▐▌ ▐▌█ ▗▄▟▙▄▖█    ▝▚▄▟▌▐▌ ▐▌▝▚▄▟▌█   █ ▐▛▀▀▘█ 
+▐▌ ▐▌█   ▐▌  █         ▐▛▀▘      █   █ ▝▚▄▄▖█ 
+▝▚▄▞▘█   ▐▌            ▐▌                   █ 
+         ▐▌                                   
+
+UltraPanel Control Interface
+`) + `2026 (c) solarcosmic\n`);
 
 const app = express();
 app.set("view engine", "ejs");
@@ -18,11 +29,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 });*/
 
 http.listen(port, () => {
-    console.log("Running HTTP + websocket on port " + port);
+    console.log(kleur.grey(["["]) + kleur.green("INFO") + kleur.grey(`] Now listening on port :${port}.`));
 });
 
 io.on("connection", (socket) => {
-    console.log("Client connected");
+    console.log(kleur.grey(["["]) + kleur.green("INFO") + kleur.grey(`] Client connected.`));
 })
 
 app.get('/', async (req, res) => {
