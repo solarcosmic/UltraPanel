@@ -8,21 +8,35 @@
     <style>
         /* From https://stackoverflow.com/a/57335917 */
         #container {
-            width: 100%;
+            width: 98vw;
+            height: 98vh;
             display: grid;
             grid-template-areas: "sidebar main";
-            grid-template-columns: 200px auto;
+            grid-template-columns: 200px 1fr;
         }
         #sidebar {
             grid-area: sidebar;
-            height: 100vw;
+            height: 98vh;
             background-color: #161616;
             padding: 20px;
+            box-sizing: border-box;
+        }
+        #display {
+            grid-area: main;
+            height: 98vh;
+            max-height: 98vh;
+            overflow-y: auto;
+            background: none;
+            display: flex;
+            flex-direction: column;
         }
         #console {
-            grid-area: main;
-            height: 100vw;
-            background-color: #121212;
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            background-color: #1b1b1b;
+            padding: 32px;
+            min-height: 0;
         }
         #server-name {
             font-size: 18px;
@@ -32,12 +46,18 @@
         #server-ip {
             color: grey;
             text-overflow: ellipsis;
+            font-size: 15px;
         }
         #console-block {
-            width: 500px;
-            height: 500px;
-            background-color: #121212;
+            width: 100%;
+            flex: 1 1 auto;
+            resize: none;
+            min-height: 0;
+            background-color: #1b1b1b;
+            border: none;
             color: white;
+            box-sizing: border-box;
+            margin-bottom: 8px;
         }
         #console-hint {
             color: grey;
@@ -45,10 +65,12 @@
             padding-top: 10px;
         }
         #console-command {
-            width: 500px;
-            background-color: #121212;
+            width: 100%;
+            background-color: #1b1b1b;/*#121212;*/
             color: white;
             font-size: 20px;
+            box-sizing: border-box;
+            border: none;
         }
         #navigation-back {
             background-color: #242424;
@@ -70,8 +92,8 @@
             border-radius: 8px;
             width: 100%;
             height: 32px;
-            margin-top: 10px;
-            margin-bottom: 10px;
+            margin-top: 5px;
+            margin-bottom: 5px;
             cursor: pointer;
         }
         #server-status-main[status="start"] {
@@ -87,10 +109,27 @@
             border-radius: 8px;
             width: 100%;
             height: 32px;
-            margin-top: 10px;
-            margin-bottom: 10px;
+            margin-top: 5px;
+            margin-bottom: 5px;
             cursor: pointer;
-        };
+        }
+        .sidebar-button {
+            background-color: #242424;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            width: 100%;
+            height: 32px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+        .sidebar-button.active {
+            background-color: #1a2129c5;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+        }
     </style>
     <script src="/socket.io/socket.io.js"></script>
 </head>
@@ -102,11 +141,14 @@
             <div id="server-ip">127.0.0.1:25565</div>
             <button id="server-status-main" status="start">Start</button>
             <button id="server-status-restart">Restart</button>
+            <hr>
         </div>
-        <div id="console">
-            <textarea id="console-block" readonly></textarea>
-            <input type="text" id="console-command" placeholder="Enter a command..."></input>
-            <div id="console-hint">Only showing the last 100 entries.</div>
+        <div id="display">
+            <div id="console">
+                <textarea id="console-block" readonly></textarea>
+                <input type="text" id="console-command" placeholder="Enter a command..."></input>
+                <div id="console-hint">Only showing the last 100 entries.</div>
+            </div>
         </div>
     </div>
     
@@ -188,6 +230,48 @@
     function getActionStatus() {
         return server_status_button.getAttribute("status") || "unknown";
     };
+
+    function correspondAction(status = "start") {
+        if (status == "start") {
+            updateStatus("start", server.id); // needs security measure
+        } else if (status == "stop") {
+            updateStatus("stop", server.id); // needs security measure
+        } else if (status == "restart") {
+            updateStatus("restart", server.id); // needs security measure else {
+        } else {
+            return;
+        }
+    }
+
+    /* From https://github.com/Interlabs-Official/ClassroomPlus/blob/main/settings/script.js */
+    function createAndAssignId(elementType, id) {
+        const element = document.createElement(elementType || "div");
+        element.setAttribute("id", id || "unknown-id");
+        return element;
+    };
+
+    function createAndAssignClass(elementType, className) {
+        const element = document.createElement(elementType || "div");
+        element.classList.add(className || "unknown-class");
+        return element;
+    };
+
+    function generateButton(name = "Untitled", buttonId = "untitled", callback) {
+        const button = createAndAssignId("button", "sidebar-" + buttonId);
+        button.classList.add("sidebar-button");
+        button.textContent = name;
+        document.getElementById("sidebar").appendChild(button);
+        if (callback) callback(button);
+        return button;
+    }
+
+    generateButton("Dashboard", "dashboard");
+    generateButton("Console", "console", (button) => {
+        button.classList.toggle("active");
+    });
+    generateButton("Files", "files");
+    generateButton("Startup", "startup");
+    generateButton("Settings", "settings");
 
     function getServerStatus(id = server.id) {
         return fetch("/api/server-status/" + id, {

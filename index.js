@@ -2,6 +2,7 @@ const express = require("express");
 const path = require("path");
 const Docker = require("dockerode");
 const kleur = require("kleur");
+const { version } = require("./package.json");
 var docker = new Docker();
 
 console.log(kleur.bold(`
@@ -11,7 +12,7 @@ console.log(kleur.bold(`
 ▝▚▄▞▘█   ▐▌            ▐▌                   █ 
          ▐▌                                   
 
-UltraPanel Control Interface
+UltraPanel Control Interface v${version} (Beta - GPLv3)
 `) + `2026 (c) solarcosmic\n`);
 
 const app = express();
@@ -29,11 +30,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 });*/
 
 http.listen(port, () => {
-    console.log(kleur.grey(["["]) + kleur.green("INFO") + kleur.grey(`] Now listening on port :${port}.`));
+    infoLog(`Now listening on port :${port}.`);
 });
 
 io.on("connection", (socket) => {
-    console.log(kleur.grey(["["]) + kleur.green("INFO") + kleur.grey(`] Client connected.`));
+    infoLog(`Client connected.`);
 })
 
 app.get('/', async (req, res) => {
@@ -68,26 +69,30 @@ app.get("/server/:shortId", async (req, res) => {
     //console.log(logs);
 });
 
+function infoLog(log) {
+    console.log(kleur.grey(["["]) + kleur.green("INFO") + kleur.grey(`] ${log}`));
+}
+
 app.post("/api/send-signal", async (req, res) => {
     const signal = req.body?.command.toLowerCase();
     const serverId = req.body?.serverId;
-    console.log(`Server with ID of ${serverId} has been sent signal '${signal}'.`);
+    infoLog(`Server with ID of ${serverId} has been sent signal '${signal}'.`);
     try {
         var container = docker.getContainer(serverId);
         if (container) {
             if (signal == "stop") {
                 container.stop(function () { // (err, data)
-                    console.log(`Server with ID of ${serverId} has been successfully stopped.`);
+                    infoLog(`Server with ID of ${serverId} has been successfully stopped.`);
                     res.json({success: true});
                 });
             } else if (signal == "start") {
                 container.start(function () {
-                    console.log(`Server with ID of ${serverId} has been successfully started.`);
+                    infoLog(`Server with ID of ${serverId} has been successfully started.`);
                     res.json({success: true});
                 });
             } else if (signal == "restart") {
                 container.restart(function () {
-                    console.log(`Server with ID of ${serverId} has been successfully restarted.`);
+                    infoLog(`Server with ID of ${serverId} has been successfully restarted.`);
                     res.json({success: true});
                 });
             }
@@ -204,7 +209,7 @@ async function listContainers() {
         });
         return containerIds;
     } catch (error) {
-        console.log("Error occurred: " + error);
+        infoLog("Error occurred: " + error);
         return [];
     }
 };
@@ -266,9 +271,9 @@ docker.getEvents({}, (err, stream) => {
         try {
             const event = JSON.parse(chunk.toString("utf-8"));
             if (event.Type == "container") {
-                console.log("event fired");
-                console.log(event);
-                console.log(event.id);
+                //console.log("event fired");
+                //console.log(event);
+                //console.log(event.id);
                 io.emit("containerStatus", {
                     id: event.Actor.ID || "testing",
                     action: event.Action,
