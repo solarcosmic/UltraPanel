@@ -24,6 +24,7 @@ const io = require("socket.io")(http);
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+// for forms: app.use(express.urlencoded({extended: true}));
 /*app.listen(port, () => {
     console.log(`Running on 127.0.0.1:${port}`);
     listContainers();
@@ -68,6 +69,17 @@ app.get("/server/:shortId", async (req, res) => {
     });
     //console.log(logs);
 });
+
+app.get("/admin/create-server", async (req, res) => {
+    res.render('create');
+});
+
+app.post("/api/admin/submit-create-server", async (req, res) => {
+    const formData = req.body;
+    console.log(formData);
+    
+    res.json({success: true});
+})
 
 function infoLog(log) {
     console.log(kleur.grey(["["]) + kleur.green("INFO") + kleur.grey(`] ${log}`));

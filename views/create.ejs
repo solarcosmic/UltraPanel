@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Server - UltraPanel</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        input[type="text"] {
+            background-color: #1b1b1b;
+            color: #ffffff;
+            border: none;
+            padding: 8px;
+        }
+        button[type="submit"] {
+            background-color: green;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+        label {
+            display: block; /* apparently makes label take up full width */
+            margin-bottom: 5px;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Create Server</h1>
+    <form action="/api/admin/submit-create-server" method="POST">
+        <label for="server-name">Server Name:</label><br>
+        <input type="text" id="server-name" name="server-name" required>
+        <label for="server-name">Server Description</label><br>
+        <input type="text" id="server-description" name="server-description">
+        <button type="submit">Create</button>
+    </form>
+</body>
+</html>
