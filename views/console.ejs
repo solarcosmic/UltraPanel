@@ -58,6 +58,10 @@
             color: white;
             box-sizing: border-box;
             margin-bottom: 8px;
+            display: block;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            padding: 8px;
         }
         #console-hint {
             color: grey;
@@ -145,7 +149,8 @@
         </div>
         <div id="display">
             <div id="console">
-                <textarea id="console-block" readonly></textarea>
+                <!--<textarea id="console-block" readonly></textarea>-->
+                <div id="console-block"></div>
                 <input type="text" id="console-command" placeholder="Enter a command..."></input>
                 <div id="console-hint">Only showing the last 100 entries.</div>
             </div>
@@ -180,14 +185,19 @@
     var lines = [];
     socket.on("logs", (data) => {
         lines = lines.concat(data.split("\n"));
-        if (lines.length > 100) lines.slice(-maxLogCount);
-        console_logbox.value = lines.join("\n");
+        if (lines.length > 100) lines = lines.slice(-maxLogCount);
+        //console.log(lines);
+        for (const item of lines) {
+            console.log(item);
+            
+        }
+        console_logbox.textContent = lines.join("\n");
         console_logbox.scrollTop = console_logbox.scrollHeight;
     })
     socket.on("commandResult", (result) => {
         lines = lines.concat(result.split("\n"));
         if (lines.length > maxLogCount) lines.slice(-maxLogCount);
-        console_logbox.value = lines.join("\n");
+        console_logbox.textContent = lines.join("\n");
         console_logbox.scrollTop = console_logbox.scrollHeight;
     });
     socket.on("containerStatus", (data) => {
