@@ -4,6 +4,8 @@ const Docker = require("dockerode");
 const kleur = require("kleur");
 const { version } = require("./package.json");
 var docker = new Docker();
+var Convert = require("ansi-to-html");
+var convert = new Convert();
 
 console.log(kleur.bold(`
 ▗▖ ▗▖█    ■   ▄▄▄ ▗▞▀▜▌▗▄▄▖ ▗▞▀▜▌▄▄▄▄  ▗▞▀▚▖█ 
@@ -78,7 +80,28 @@ app.post("/api/admin/submit-create-server", async (req, res) => {
     const formData = req.body;
     console.log(formData);
     
-    res.json({success: true});
+    try {
+        docker.createContainer({
+            Image: "ubuntu",
+            AttachStdin: false,
+            AttachStdout: false,
+            AttachStderr: false,
+            Tty: true,
+            Cmd: ["/bin/bash"],
+            OpenStdin: false,
+            StdinOnce: false,
+        }).then((container) => {
+            infoLog("Container created!");
+            return container.start();
+        }).then((data) => {
+            infoLog("Container started and detached.");
+            res.json({success: true, serverId: "serverId"});
+        })
+    } catch (err) {
+        infoLog("An error occurred while creating container: " + err.message);
+    }
+
+    //res.json({success: true, serverId: "serverId"});
 })
 
 function infoLog(log) {
@@ -242,7 +265,7 @@ io.on("connection", (socket) => {
             const { Writable } = require('stream');
             const outStream = new Writable({
                 write(chunk, enc, callback) {
-                    socket.emit("logs", chunk.toString("utf-8"));
+                    socket.emit("logs", convert.toHtml(chunk.toString("utf-8")));
                     callback();
                 }
             });

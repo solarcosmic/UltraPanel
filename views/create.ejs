@@ -6,11 +6,12 @@
     <title>Create Server - UltraPanel</title>
     <link rel="stylesheet" href="../styles.css">
     <style>
-        input[type="text"] {
+        input[type="text"], textarea {
             background-color: #1b1b1b;
             color: #ffffff;
             border: none;
             padding: 8px;
+            padding-top: 2px;
         }
         button[type="submit"] {
             background-color: green;
@@ -20,22 +21,62 @@
             padding: 8px;
         }
         label {
-            display: block; /* apparently makes label take up full width */
+            display: block; /*  apparently makes label take up full width */
             margin-bottom: 5px;
         }
         input:focus, textarea:focus {
             outline: none;
         }
+        .header {
+            width: 100%;
+            background-color: #1b1b1b;
+            color: #ffffff;
+            padding: 8px;
+        }
+        .details .content {
+            background-color: #272727;
+            padding: 16px;
+        }
     </style>
 </head>
 <body>
     <h1>Create Server</h1>
-    <form action="/api/admin/submit-create-server" method="POST">
-        <label for="server-name">Server Name:</label><br>
-        <input type="text" id="server-name" name="server-name" required>
-        <label for="server-name">Server Description</label><br>
-        <input type="text" id="server-description" name="server-description">
-        <button type="submit">Create</button>
-    </form>
+    <div>Adds a new server to UltraPanel.</div>
+    <hr>
+    <div id="form">
+        <div id="core-details" class="details">
+            <div class="header">Core Details</div>
+            <div class="content">
+                <label for="server-name">Server Name</label>
+                <input type="text" id="server-name" name="server-name" required>
+                <label for="server-name">Server Description</label>
+                <textarea id="server-description" name="server-description"></textarea>
+            </div>
+        </div>
+        <button type="submit" id="create-button">Create</button>
+    </div>
 </body>
+<script>
+    const create_button = document.getElementById("create-button");
+    create_button.addEventListener("click", () => {
+        var data = {
+            "server-name": document.getElementById("server-name").value,
+            "server-description": document.getElementById("server-description").value
+        }
+        fetch("/api/admin/submit-create-server", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({data}),
+        })
+        .then(response => {
+            console.log("Response received");
+            if (response.ok) {
+                console.log("Response OK");
+            }
+        })
+        .then(data => console.log(data));
+    })
+</script>
 </html>
