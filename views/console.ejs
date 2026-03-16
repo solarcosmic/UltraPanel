@@ -182,7 +182,23 @@
             console_command.value = "";
         }
     });
-    var lines = [];
+    var htmlLines = [];
+    socket.on("logs", (data) => {
+        console.log(data);
+        htmlLines.push(data);
+        if (htmlLines.length > maxLogCount) htmlLines = htmlLines.slice(-maxLogCount);
+        console_logbox.innerHTML = htmlLines.join("");
+        console_logbox.scrollTop = console_logbox.scrollHeight;
+    });
+    socket.on("commandResult", (result) => {
+        console.log(result);
+        htmlLines.push(result.replace(/\n/g, "<br>"));
+        if (htmlLines.length > maxLogCount) htmlLines = htmlLines.slice(-maxLogCount);
+        console_logbox.innerHTML = htmlLines.join("");
+        console_logbox.scrollTop = console_logbox.scrollHeight;
+    });
+    /*var lines = [];
+    
     socket.on("logs", (data) => {
         lines = lines.concat(data.split("\n"));
         if (lines.length > 100) lines = lines.slice(-maxLogCount);
@@ -191,15 +207,15 @@
             console.log(item);
             
         }
-        console_logbox.textContent = lines.join("\n");
+        console_logbox.innerHTML = lines.join("<br>");
         console_logbox.scrollTop = console_logbox.scrollHeight;
     })
     socket.on("commandResult", (result) => {
         lines = lines.concat(result.split("\n"));
         if (lines.length > maxLogCount) lines.slice(-maxLogCount);
-        console_logbox.textContent = lines.join("\n");
+        console_logbox.innerHTML = lines.join("<br>");
         console_logbox.scrollTop = console_logbox.scrollHeight;
-    });
+    });*/
     socket.on("containerStatus", (data) => {
         // TODO: implement so only one person (auth?) or the valid people can get this because this occurs for every server
         console.log("Event FIRED");
@@ -225,6 +241,11 @@
         console_logbox.value = lines.join("\n");
         console_logbox.scrollTop = console_logbox.scrollHeight;
     }
+    socket.on("logStreamEnded", () => {
+        setTimeout(() => {
+            socket.emit("subscribeLogs", server.id);
+        }, 1000);
+    });
 
     function setActionStatus(status = "start") {
         if (status == "start") {

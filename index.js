@@ -250,7 +250,14 @@ async function listContainers() {
 };
 
 io.on("connection", (socket) => {
+    var logStream = null;
     socket.on("subscribeLogs", async (containerId) => {
+        if (logStream) {
+            try {
+                logStream.destroy();
+            } catch (err) {}
+            logStream = null;
+        }
         try {
             const server = docker.getContainer(containerId);
             const logStream = await server.logs({
@@ -265,11 +272,15 @@ io.on("connection", (socket) => {
             const { Writable } = require('stream');
             const outStream = new Writable({
                 write(chunk, enc, callback) {
-                    socket.emit("logs", convert.toHtml(chunk.toString("utf-8")));
+                    socket.emit("logs", convert.toHtml(chunk.toString()));
                     callback();
                 }
             });
             server.modem.demuxStream(logStream, outStream, outStream);
+
+            logStream.on("end", () => {
+                socket.emit("logStreamEnded");
+            });
 
             socket.on("disconnect", () => {
                 logStream.destroy();
@@ -281,7 +292,7 @@ io.on("connection", (socket) => {
     socket.on("execCommand", async ({containerId, command}) => {
         try {
             const server = docker.getContainer(containerId);
-            const exec = await server.exec({
+            /*const exec = await server.exec({
                 Cmd: ["/bin/sh", "-c", command],
                 AttachStdout: true,
                 AttachStderr: true
@@ -295,7 +306,23 @@ io.on("connection", (socket) => {
                 stream.on("data", chunk => output += chunk.toString("utf-8"));
                 stream.on("end", () => socket.emit("commandResult", output));
                 // stuff here
-            });
+            });*/
+            const options = {
+                stream: true,
+                stdin: true,
+                stdout: true,
+                stderr: true
+            };
+            server.attach(options, (err, stream) => {
+                if (err) {
+                    socket.emit("commandResult", "[UPD > Error]: " + err.message);
+                    return {success: false, error: err.message};
+                };
+                stream.write(command + "\n");
+                var output = "";
+                stream.on("data", chunk => output += chunk.toString("utf-8"));
+                stream.on("end", () => socket.emit("commandResult", output));
+            })
         } catch (e) {
             socket.emit("commandResult", "[UPD > Error]: " + e.message);
         }
