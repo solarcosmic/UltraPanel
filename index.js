@@ -145,6 +145,23 @@ app.post("/api/send-signal", async (req, res) => {
     }
 });
 
+app.post("/api/delete-server", async (req, res) => {
+    try {
+        if (req.body.affirm && req.body.serverId) {
+            const container = docker.getContainer(req.body.serverId);
+            if (!container) return res.status(500).json({success: false, error: "No such server!"});
+            if (container.isRunning) await container.stop();
+            await container.remove({force: req.body.force || false});
+            console.log("Response sent - container is gone.");
+            res.json({success: true});
+        }
+    } catch (err) {
+        console.error(err);
+        console.log("ERROR DETECTED");
+        res.status(500).json({success: false, error: err.message});
+    }
+})
+
 app.get("/api/server-status/:id", async (req, res) => {
     const serverId = req.params.id;
     try {

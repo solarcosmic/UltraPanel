@@ -134,6 +134,20 @@
         input:focus, textarea:focus {
             outline: none;
         }
+        .huge-header {
+            font-size: 24px;
+        }
+        .sub-header, #server-name-settings {
+            font-size: 18px;
+        }
+        .danger-warning-button {
+            padding: 8px 12px;
+            background-color: #210000;
+            color: #ffffff;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
     </style>
     <script src="/socket.io/socket.io.js"></script>
 </head>
@@ -155,8 +169,9 @@
                 <div id="console-hint">Only showing the last 100 entries.</div>
             </div>
             <div id="settings" style="display: none;" class="content-box">
-                <h1>Server Settings</h1>
-                <h3 id="server-name-settings">Managing </h3>
+                <div class="huge-header">Server Settings</h1>
+                <div class="sub-header">Managing <b><span id="server-name-settings"></span></b></div>
+                <button id="delete-server" class="danger-warning-button">Delete Server</button>
             </div>
         </div>
     </div>
@@ -337,6 +352,7 @@
                 //console.log("MAIN PORT: " + data.mainPort);
                 document.getElementById("server-ip").textContent = `${data.ip} -> ` + data.mainPort
             }
+            document.getElementById("server-name-settings").textContent = server.name;
         });
     });
     function updateStatus(statusType, serverId) {
@@ -380,6 +396,35 @@
         hideAllContents();
         showSidebarObject("console");
         selectButton("console");
+    });
+    document.getElementById("delete-server").addEventListener("click", () => {
+        var thing = confirm("Are you sure? This will shut off the server and delete it permanently!");
+        if (thing) {
+            fetch("/api/delete-server", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({affirm: true, force: true, serverId: server.id}),
+            })
+            .then(response => {
+                console.log("Response received");
+                console.log(response);
+                return response.json();
+                //if (response.ok) {
+                //    renderServerList();
+                //}
+            })
+            .then(data => {
+                if (data.success == true) {
+                    window.location.href = "/";
+                } else {
+                    if (data.error) {
+                        alert("Error deleting server: " + data.error);
+                    }
+                }
+            });
+        }
     });
 </script>
 </html>
