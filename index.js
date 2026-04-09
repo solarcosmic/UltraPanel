@@ -6,6 +6,8 @@ const { version } = require("./package.json");
 var docker = new Docker();
 var Convert = require("ansi-to-html");
 var convert = new Convert();
+const os = require("os");
+const interfaces = os.networkInterfaces();
 
 console.log(kleur.bold(`
 ▗▖ ▗▖█    ■   ▄▄▄ ▗▞▀▜▌▗▄▄▖ ▗▞▀▜▌▄▄▄▄  ▗▞▀▚▖█ 
@@ -17,9 +19,13 @@ console.log(kleur.bold(`
 UltraPanel Control Interface v${version} (Beta - GPLv3)
 `) + `2026 (c) solarcosmic\n`);
 
+const ip = Object.values(interfaces).flat().find(iface => iface.family == "IPv4" && !iface.internal);
+//console.log(ip)
+
 const app = express();
 app.set("view engine", "ejs");
 const port = 3000;
+infoLog(`Establishing connection on ${ip.address}:${port}.`);
 
 const http = require("http").createServer(app);
 const io = require("socket.io")(http);
@@ -146,7 +152,9 @@ app.get("/api/server-status/:id", async (req, res) => {
         if (!container) throw Error("Server with ID not found. Is the correct ID used?");
         container.inspect((err, data) => {
             if (err) throw Error(err);
-            res.json({success: true, status: data.State.Status, isRunning: data.State.Running});
+            //console.log(data.NetworkSettings.Ports);
+            const port = data.Config.Env.find(e => e.startsWith("Port="))?.split("=")[1] || 25565;
+            res.json({success: true, status: data.State.Status, isRunning: data.State.Running, mainPort: port, ip: ip.address || "127.0.0.1"});
         });
         //
     } catch (err) {
