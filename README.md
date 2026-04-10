@@ -14,6 +14,7 @@ UltraPanel is a simple panel system that I wanted to work on to kind of experime
 - Send power commands
 
 ## How to Run
+**NOTE:** A recommended minimum for the panel is 10GB storage, 2 cores, and 2GB RAM. You may encounter issues with less specifications.
 1. Download the install script [here](https://github.com/solarcosmic/UltraPanel/blob/main/setup.sh) or in the [releases](https://github.com/solarcosmic/UltraPanel/releases) tab.
 2. Run the script. If you would like a one-liner, for example:
 ```bash
@@ -28,5 +29,8 @@ The above command downloads the script, provides valid permissions, then execute
 ```bash
 cd /root/ultrapanel && node index.js
 ```
+
+## AI Usage
+AI was used briefly, primarily Google AI suggestions/Gemini and help from GPT-4.1 and GPT-5.2 for mostly debugging purposes (GitHub Copilot) to save time. AI was not used to make huge chunks of code.
 
 **NOTE:** This is very much a proof-of-concept panel and should NOT be used commercially and may contain security concerns.
