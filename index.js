@@ -96,14 +96,14 @@ app.post("/api/admin/submit-create-server", async (req, res) => {
         Tty: true,
         Env: ["MEMORYSIZE=1G"],
         ExposedPorts: {
-            [`${port1}/tcp`]: {}, // TODO: change both ports
-            [`${port2}/udp`]: {}  // so that the user can make multiple
+            [`25565/tcp`]: {}, // TODO: change both ports
+            //[`${port2}/udp`]: {}  // so that the user can make multiple
         },
         HostConfig: {
             RestartPolicy: { Name: "unless-stopped" },
             PortBindings: {
-                [`${port1}/tcp`]: [{ HostPort: port1 }],
-                [`${port2}/udp`]: [{ HostPort: port2 }],
+                [`25565/tcp`]: [{ HostPort: port1 }],
+                //[`${port2}/udp`]: [{ HostPort: port2 }],
             },
             Binds: [`/root/${crypto.randomUUID()}:/data:rw`]
         },
@@ -116,14 +116,14 @@ app.post("/api/admin/submit-create-server", async (req, res) => {
         Tty: true,
         Env: ["MEMORYSIZE=1G"],
         ExposedPorts: {
-            [`${port1}/tcp`]: {}, // TODO: change both ports
-            [`${port2}/udp`]: {}  // so that the user can make multiple
+            [`25565/tcp`]: {}, // TODO: change both ports
+            [`19132/udp`]: {}  // so that the user can make multiple
         },
         HostConfig: {
             RestartPolicy: { Name: "unless-stopped" },
             PortBindings: {
-                [`${port1}/tcp`]: [{ HostPort: port1 }],
-                [`${port2}/udp`]: [{ HostPort: port2 }],
+                [`25565/tcp`]: [{ HostPort: port1 }],
+                [`19132/udp`]: [{ HostPort: port2 }],
             },
             Binds: [`/root/${crypto.randomUUID()}:/server:rw`]
         },
