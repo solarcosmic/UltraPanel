@@ -14,6 +14,10 @@ git clone https://github.com/solarcosmic/UltraPanel.git /root/ultrapanel
 cd /root/ultrapanel
 npm i
 
+# Prerequisites
+docker pull marctv/minecraft-papermc-server:latest
+docker pull ghcr.io/pumpkin-mc/pumpkin:master
+
 echo ==========
 echo UltraPanel installed.
 echo You can run UltraPanel by doing:
