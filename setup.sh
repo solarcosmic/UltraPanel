@@ -22,7 +22,7 @@ echo ==========
 echo UltraPanel installed.
 echo You can run UltraPanel by doing:
 echo
-echo node /root/ultrapanel/index.js
+echo cd /root/ultrapanel && node index.js
 echo
 echo ==========
 sudo node index.js

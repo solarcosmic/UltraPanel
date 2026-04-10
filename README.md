@@ -26,7 +26,7 @@ The above command downloads the script, provides valid permissions, then execute
 3. Your panel should be available at (your machine IP):3000! If you need to start the panel again, you should be able to use this command:
 
 ```bash
-node /root/ultrapanel/index.js
+cd /root/ultrapanel && node index.js
 ```
 
 **NOTE:** This is very much a proof-of-concept panel and should NOT be used commercially and may contain security concerns.
