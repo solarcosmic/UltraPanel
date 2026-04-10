@@ -285,7 +285,7 @@ io.on("connection", (socket) => {
         }
         try {
             const server = docker.getContainer(containerId);
-            const logStream = await server.logs({
+            logStream = await server.logs({
                 follow: true,
                 stdout: true,
                 stderr: true,
@@ -306,9 +306,12 @@ io.on("connection", (socket) => {
             logStream.on("end", () => {
                 socket.emit("logStreamEnded");
             });
+            logStream.on("error", (e) => {
+                socket.emit("logs", "Log stream error: " + e.message);
+            });
 
             socket.on("disconnect", () => {
-                logStream.destroy();
+                try { logStream?.destroy(); } catch (e) {}
             });
         } catch (e) {
             socket.emit("logs", "Error with log stream: " + e.message);
