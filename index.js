@@ -285,6 +285,8 @@ io.on("connection", (socket) => {
         }
         try {
             const server = docker.getContainer(containerId);
+            const info = await server.inspect();
+            const isTty = !!info.Config.Tty;
             logStream = await server.logs({
                 follow: true,
                 stdout: true,
@@ -293,15 +295,21 @@ io.on("connection", (socket) => {
                 timestamps: true
             });
 
-            // Credit: GPT-4.1 (for the demux process)
-            const { Writable } = require('stream');
-            const outStream = new Writable({
-                write(chunk, enc, callback) {
+            if (isTty) {
+                logStream.on("data", (chunk) => {
                     socket.emit("logs", convert.toHtml(chunk.toString()));
-                    callback();
-                }
-            });
-            server.modem.demuxStream(logStream, outStream, outStream);
+                })
+            } else {
+                // Credit: GPT-4.1 (for the demux process)
+                const { Writable } = require('stream');
+                const outStream = new Writable({
+                    write(chunk, enc, callback) {
+                        socket.emit("logs", convert.toHtml(chunk.toString()));
+                        callback();
+                    }
+                });
+                server.modem.demuxStream(logStream, outStream, outStream);
+            }
 
             logStream.on("end", () => {
                 socket.emit("logStreamEnded");
