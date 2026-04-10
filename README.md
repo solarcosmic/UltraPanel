@@ -1,5 +1,6 @@
 # UltraPanel
-A proof-of-concept game panel written in NodeJS that communicates with Docker.
+A proof-of-concept game panel written in NodeJS that communicates with Docker.<br>
+**DEMO VIDEO OF INSTALL AND OVERVIEW: https://youtu.be/H6YxhgKi_D4**
 
 <img width="1920" height="1080" alt="ultrapanel_banner" src="https://github.com/user-attachments/assets/6912b80f-a7b4-428b-ab4e-3423743ff86e" />
 
