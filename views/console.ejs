@@ -260,10 +260,14 @@
         console_logbox.value = lines.join("\n");
         console_logbox.scrollTop = console_logbox.scrollHeight;
     }
-    socket.on("logStreamEnded", () => {
-        setTimeout(() => {
-            socket.emit("subscribeLogs", server.id);
-        }, 1000);
+    socket.on("logStreamEnded", async () => {
+        try {
+            const status = await getServerStatus(server.id);
+            if (!status?.isRunning) return;
+            setTimeout(() => {
+                socket.emit("subscribeLogs", server.id);
+            }, 1000);
+        } catch {}
     });
 
     function setActionStatus(status = "start") {
@@ -293,6 +297,11 @@
         }
     }
 
+    server_status_button.addEventListener("click", () => {
+        const status = getActionStatus();
+        updateStatus(status, server.id);
+    })
+
     /* From https://github.com/Interlabs-Official/ClassroomPlus/blob/main/settings/script.js */
     function createAndAssignId(elementType, id) {
         const element = document.createElement(elementType || "div");
@@ -315,12 +324,12 @@
         return button;
     }
 
-    generateButton("Dashboard", "dashboard");
+    //generateButton("Dashboard", "dashboard");
     generateButton("Console", "console", (button) => {
         button.classList.toggle("active");
     });
-    generateButton("Files", "files");
-    generateButton("Startup", "startup");
+    //generateButton("Files", "files");
+    //generateButton("Startup", "startup");
     generateButton("Settings", "settings");
 
     function getServerStatus(id = server.id) {

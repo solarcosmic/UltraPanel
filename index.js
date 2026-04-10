@@ -82,20 +82,30 @@ app.get("/admin/create-server", async (req, res) => {
     res.render('create');
 });
 
+const mcTemplate = {
+    Image: "marctv/minecraft-papermc-server:latest",
+    OpenStdin: true,
+    Tty: true,
+    Env: ["MEMORYSIZE=1G"],
+    ExposedPorts: {
+        "25565/tcp": {}, // TODO: change both ports
+        "25565/udp": {}  // so that the user can make multiple
+    },
+    HostConfig: {
+        RestartPolicy: { Name: "unless-stopped" },
+        PortBindings: {
+            "25565/tcp": [{ HostPort: "25565" }],
+            "25565/udp": [{ HostPort: "25565" }],
+        },
+        Binds: [`/root/${crypto.randomUUID()}}:/data:rw`]
+    }
+}
+
 app.post("/api/admin/submit-create-server", async (req, res) => {
     const formData = req.body;
-    console.log(formData);
-    
+
     try {
-        docker.createContainer({
-            Image: "ubuntu",
-            AttachStdin: false,
-            AttachStdout: false,
-            AttachStderr: false,
-            Tty: true,
-            Cmd: ["/bin/bash"],
-            OpenStdin: false,
-            StdinOnce: false,
+        docker.createContainer(mcTemplate, { name: formData.data["server-name"] || "Untitled"
         }).then((container) => {
             infoLog("Container created!");
             return container.start();
