@@ -38,10 +38,21 @@
             color: grey;
             font-style: italic;
         }
+        #create-server {
+            padding: 8px 12px;
+            background-color: #202020;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
     </style>
 </head>
 <body>
     <h1>Active Server IDs</h1>
+    <button id="create-server">+ Create Server</button>
     <div id="server-list">
 
     </div>
@@ -75,6 +86,10 @@
             })
             .then(data => console.log(data));
         };
+
+        document.getElementById("create-server").addEventListener("click", () => {
+            window.location.href = "/admin/create-server";
+        })
 
         function renderServerList() {
             fetch("/api/servers", {

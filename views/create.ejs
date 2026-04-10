@@ -6,7 +6,7 @@
     <title>Create Server - UltraPanel</title>
     <link rel="stylesheet" href="../styles.css">
     <style>
-        input[type="text"], textarea {
+        input[type="text"], textarea, select, input[type="number"] { /* could generalise inputs */
             background-color: #1b1b1b;
             color: #ffffff;
             border: none;
@@ -51,6 +51,15 @@
                 <input type="text" id="server-name" name="server-name" required>
                 <label for="server-name">Server Description</label>
                 <textarea id="server-description" name="server-description"></textarea>
+                <label for="server-type">Server Type</label>
+                <select id="server-type" name="server-type">
+                    <option value="papermc" default>Minecraft > Paper</option>
+                    <option value="pumpkinmc">Minecraft > Pumpkin (experimental)</option>
+                </select>
+                <label for="server-port-main">Main Allocated Port (usually TCP)</label>
+                <input type="number" id="server-port-main" name="server-port-main" min="1000" max="65535" value="25565"></textarea>
+                <label for="server-port-secondary">Secondary Allocated Port (if applicable) (usually UDP)</label>
+                <input type="number" id="server-port-secondary" name="server-port-secondary" min="1000" max="65535" value="19132"></textarea>
             </div>
         </div>
         <button type="submit" id="create-button">Create</button>
@@ -58,25 +67,32 @@
 </body>
 <script>
     const create_button = document.getElementById("create-button");
-    create_button.addEventListener("click", () => {
-        var data = {
+    create_button.addEventListener("click", async () => {
+        const data = {
             "server-name": document.getElementById("server-name").value,
-            "server-description": document.getElementById("server-description").value
+            "server-description": document.getElementById("server-description").value,
+            "server-type": document.getElementById("server-type").value || "papermc",
+            "server-port-main": document.getElementById("server-port-main").value || "25565",
+            "server-port-secondary": document.getElementById("server-port-secondary").value || "19132",
         }
-        fetch("/api/admin/submit-create-server", {
+        try {
+            const response = await fetch("/api/admin/submit-create-server", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({data}),
-        })
-        .then(response => {
-            console.log("Response received");
-            if (response.ok) {
-                console.log("Response OK");
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok || payload.success == false) {
+                alert("NOTE: An error occurred but it is likely the server was created. Please check before trying again.\n==========\n" + (payload.error || `Failed: ${response.status}`));
+                return;
             }
-        })
-        .then(data => console.log(data));
-    })
+            alert("Server created!");
+            window.location.href = "/";
+        } catch (err) {
+            alert(err?.message || "An error occurred, it was likely a network error.");
+        }
+    });
 </script>
 </html>

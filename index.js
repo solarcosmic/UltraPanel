@@ -7,6 +7,7 @@ var docker = new Docker();
 var Convert = require("ansi-to-html");
 var convert = new Convert();
 const os = require("os");
+const crypto = require("crypto");
 const interfaces = os.networkInterfaces();
 
 console.log(kleur.bold(`
@@ -82,30 +83,67 @@ app.get("/admin/create-server", async (req, res) => {
     res.render('create');
 });
 
-const mcTemplate = {
-    Image: "marctv/minecraft-papermc-server:latest",
-    OpenStdin: true,
-    Tty: true,
-    Env: ["MEMORYSIZE=1G"],
-    ExposedPorts: {
-        "25565/tcp": {}, // TODO: change both ports
-        "25565/udp": {}  // so that the user can make multiple
-    },
-    HostConfig: {
-        RestartPolicy: { Name: "unless-stopped" },
-        PortBindings: {
-            "25565/tcp": [{ HostPort: "25565" }],
-            "25565/udp": [{ HostPort: "25565" }],
-        },
-        Binds: [`/root/${crypto.randomUUID()}}:/data:rw`]
-    }
-}
-
 app.post("/api/admin/submit-create-server", async (req, res) => {
     const formData = req.body;
+    const name = formData.data["server-name"] || "Untitled";
+    const type = formData.data["server-type"] || "papermc";
+    const port1 = formData.data["server-port-main"] || "25565";
+    const port2 = formData.data["server-port-secondary"] || "19132";
 
-    try {
-        docker.createContainer(mcTemplate, { name: formData.data["server-name"] || "Untitled"
+    const mcTemplate = {
+        Image: "marctv/minecraft-papermc-server:latest",
+        OpenStdin: true,
+        Tty: true,
+        Env: ["MEMORYSIZE=1G"],
+        ExposedPorts: {
+            [`${port1}/tcp`]: {}, // TODO: change both ports
+            [`${port2}/udp`]: {}  // so that the user can make multiple
+        },
+        HostConfig: {
+            RestartPolicy: { Name: "unless-stopped" },
+            PortBindings: {
+                [`${port1}/tcp`]: [{ HostPort: port1 }],
+                [`${port2}/udp`]: [{ HostPort: port2 }],
+            },
+            Binds: [`/root/${crypto.randomUUID()}:/data:rw`]
+        },
+    }
+
+
+    const pumpkinTemplate = {
+        Image: "ghcr.io/pumpkin-mc/pumpkin:master",
+        OpenStdin: true,
+        Tty: true,
+        Env: ["MEMORYSIZE=1G"],
+        ExposedPorts: {
+            [`${port1}/tcp`]: {}, // TODO: change both ports
+            [`${port2}/udp`]: {}  // so that the user can make multiple
+        },
+        HostConfig: {
+            RestartPolicy: { Name: "unless-stopped" },
+            PortBindings: {
+                [`${port1}/tcp`]: [{ HostPort: port1 }],
+                [`${port2}/udp`]: [{ HostPort: port2 }],
+            },
+            Binds: [`/root/${crypto.randomUUID()}:/server:rw`]
+        },
+    }
+
+    var chosenTemplate = mcTemplate;
+    if (type == "papermc") chosenTemplate = mcTemplate;
+    if (type == "pumpkinmc") chosenTemplate = pumpkinTemplate;
+    docker.createContainer({...chosenTemplate, name}, (err, cont) => {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        infoLog(`Creating server named ${name} using ${chosenTemplate.Image}. Running on main port ${port1} and secondary port ${port2}.`);
+        cont.start((err2) => {
+            if (err2) return res.status(500).json({ success: false, error: err2.message });
+            infoLog(`Started server named ${name} successfully!`);
+            res.json({success: true, serverId: cont.id});
+        })
+    })
+
+    /*try {
+        docker.createContainer(mcTemplate, { 
         }).then((container) => {
             infoLog("Container created!");
             return container.start();
@@ -115,7 +153,7 @@ app.post("/api/admin/submit-create-server", async (req, res) => {
         })
     } catch (err) {
         infoLog("An error occurred while creating container: " + err.message);
-    }
+    }*/
 
     //res.json({success: true, serverId: "serverId"});
 })
@@ -179,11 +217,32 @@ app.get("/api/server-status/:id", async (req, res) => {
         if (!container) throw Error("Server with ID not found. Is the correct ID used?");
         container.inspect((err, data) => {
             if (err) throw Error(err);
-            //console.log(data.NetworkSettings.Ports);
-            const port = data.Config.Env.find(e => e.startsWith("Port="))?.split("=")[1] || 25565;
-            res.json({success: true, status: data.State.Status, isRunning: data.State.Running, mainPort: port, ip: ip.address || "127.0.0.1"});
+            // Credit: GPT-4.1 (for doing the tcp/udp detection thing as I was on a time crunch)
+            const ports = data.NetworkSettings.Ports || {};
+            let mainPort = 25565;
+
+            const udpEntry = Object.entries(ports).find(
+                ([key, val]) => key.endsWith('/tcp') && Array.isArray(val) && val.length > 0 && val[0]?.HostPort
+            );
+            if (udpEntry) {
+                mainPort = udpEntry[1][0].HostPort;
+            } else {
+                const tcpEntry = Object.entries(ports).find(
+                    ([key, val]) => key.endsWith('/udp') && Array.isArray(val) && val.length > 0 && val[0]?.HostPort
+                );
+                if (tcpEntry) {
+                    mainPort = tcpEntry[1][0].HostPort;
+                }
+            }
+
+            res.json({
+                success: true,
+                status: data.State.Status,
+                isRunning: data.State.Running,
+                mainPort: mainPort,
+                ip: ip.address || "127.0.0.1"
+            });
         });
-        //
     } catch (err) {
         console.error(err);
         res.status(500).json({success: false, error: err.message});
