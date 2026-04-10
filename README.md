@@ -7,7 +7,7 @@ A proof-of-concept game panel written in NodeJS that communicates with Docker.
 ## What's UltraPanel?
 UltraPanel is a simple panel system that I wanted to work on to kind of experiment with how Docker works. It's in its very early stages, but check out what it can do!
 - Spin up Minecraft servers
-- Allow you to allocate ports
+- Allows you to allocate ports
 - Name servers
 - Delete servers
 - View console logs and run commands!
